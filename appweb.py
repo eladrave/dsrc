@@ -8,6 +8,7 @@ from flask import Flask, request, send_file, render_template_string
 import logging
 from dotenv import load_dotenv
 import os
+import urllib.parse
 
 load_dotenv()
 
@@ -42,8 +43,8 @@ HTML_TEMPLATE = '''
 </html>
 '''
 
-def get_appointments(session, url):
-    r = session.get(url)
+def get_appointments(session, url, params=None):
+    r = session.get(url, params=params)
     data = r.json()
     return data
 
@@ -74,15 +75,21 @@ def get_report():
     session = requests.Session()
     session.headers.update({'Authorization': f'token {api_key}'})
 
+    params = {
+        'start_gte': days_ago.strftime('%m/%d/%Y'),
+        'start_lte': now.strftime('%m/%d/%Y')
+    }
+
     # Get appointments from all pages
     while url:
+        data = get_appointments(session, url, params)
         data = get_appointments(session, url)
         for appointment in data['results']:
             start = appointment['start']
             appointment_start = datetime.fromisoformat(start.replace('Z', '+00:00')).astimezone(pytz.utc)
 
             if days_ago <= appointment_start:
-                time.sleep(1)  # Add a delay between requests
+                #time.sleep(1)  # Add a delay between requests
                 appointment_details = get_appointment_details(session, appointment['url'])
 
                 coach_name = appointment_details['cjas'][0]['name'] if appointment_details['cjas'] else None
