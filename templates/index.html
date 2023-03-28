@@ -1,0 +1,52 @@
+<!doctype html>
+<html>
+<head>
+  <title>Appointment Report</title>
+  <style>
+    .spinner {
+      margin: 0 auto;
+      width: 40px;
+      height: 40px;
+      border: 4px solid rgba(0, 0, 0, .1);
+      border-left-color: #222;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Appointment Report</h1>
+  <form id="report-form">
+    <div>
+      <label for="days">Days:</label>
+      <input type="number" id="days" name="days" value="7">
+    </div>
+    <div>
+      <label for="coach">Coach:</label>
+      <select id="coach" name="coach">
+        <option value="">--All Coaches--</option>
+        {{ options|safe }}
+      </select>
+    </div>
+    <div>
+      <label for="client">Client:</label>
+      <input type="text" id="client" name="client">
+    </div>
+    <button type="submit">Get Report</button>
+  </form>
+  <div id="processing" style="display: none;">
+    <p>Processing...</p>
+    <div class="spinner"></div>
+  </div>
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+
+
+
+</body>
+</html>

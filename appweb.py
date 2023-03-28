@@ -4,7 +4,7 @@ import csv
 import pytz
 import time
 from datetime import datetime, timedelta
-from flask import Flask, request, send_file, render_template_string
+from flask import Flask, request, send_file, render_template_string, render_template, make_response
 import logging
 from dotenv import load_dotenv
 import os
@@ -70,8 +70,13 @@ def generate_coach_options(coaches):
 
 
 def get_appointments(session, url, params=None):
-    r = session.get(url, params=params)
-    data = r.json()
+    try:
+        r = session.get(url, params=params)
+        data = r.json()
+    except requests.exceptions.JSONDecodeError:
+        print(f"Error decoding JSON. Response status: {r.status_code}, content: {r.content}")
+        data = None
+
     return data
 
 
@@ -85,8 +90,8 @@ def index():
     api_key = os.environ['TUTORCRUNCHER_API_KEY']
     coaches = get_coaches(api_key)
     options = generate_coach_options(coaches)
-    return render_template_string(HTML_TEMPLATE, options=options)
-
+ #   return render_template_string(HTML_TEMPLATE, options=options)
+    return render_template('index.html', options=options)
 
 @app.route('/getreport')
 def get_report():
@@ -116,7 +121,8 @@ def get_report():
     # Get appointments from all pages
     while url:
         data = get_appointments(session, url, params)
-        data = get_appointments(session, url)
+        if data is None:
+            break
         for appointment in data['results']:
             start = appointment['start']
             appointment_start = datetime.fromisoformat(start.replace('Z', '+00:00')).astimezone(pytz.utc)
