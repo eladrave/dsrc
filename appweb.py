@@ -31,7 +31,9 @@ HTML_TEMPLATE = '''
     </div>
     <div>
       <label for="coach">Coach:</label>
-      <input type="text" id="coach" name="coach">
+      <select id="coach" name="coach">
+        {{options|safe}}
+      </select>
     </div>
     <div>
       <label for="client">Client:</label>
@@ -42,6 +44,30 @@ HTML_TEMPLATE = '''
 </body>
 </html>
 '''
+
+def get_coaches(api_key):
+    url = 'https://secure.tutorcruncher.com/api/contractors/'
+    coaches = []
+
+    session = requests.Session()
+    session.headers.update({'Authorization': f'token {api_key}'})
+
+    while url:
+        data = get_appointments(session, url)
+        coaches.extend(data['results'])
+        url = data['next']
+
+    return coaches
+
+
+def generate_coach_options(coaches):
+    options = []
+    for coach in coaches:
+        option = f'<option value="{coach["id"]}">{coach["first_name"]} {coach["last_name"]}</option>'
+        options.append(option)
+
+    return ''.join(options)
+
 
 def get_appointments(session, url, params=None):
     r = session.get(url, params=params)
@@ -56,7 +82,11 @@ def get_appointment_details(session, url):
 
 @app.route('/')
 def index():
-    return render_template_string(HTML_TEMPLATE)
+    api_key = os.environ['TUTORCRUNCHER_API_KEY']
+    coaches = get_coaches(api_key)
+    options = generate_coach_options(coaches)
+    return render_template_string(HTML_TEMPLATE, options=options)
+
 
 @app.route('/getreport')
 def get_report():
@@ -79,6 +109,9 @@ def get_report():
         'start_gte': days_ago.strftime('%m/%d/%Y'),
         'start_lte': now.strftime('%m/%d/%Y')
     }
+
+    if coach_filter:
+        params['contractor'] = coach_filter
 
     # Get appointments from all pages
     while url:
